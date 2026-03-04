@@ -10,7 +10,6 @@
 // ============================================================
 
 int[,] grille = new int[50, 20];
-
 int largeur = 50;
 int hauteur = 20;
 
@@ -102,10 +101,10 @@ for (int y = 0; y < hauteur; y++)
     {
         Console.SetCursorPosition(offsetX + x, offsetY + y);
         int cell = grille[x, y];
-        if (cell == 1)      { Console.ForegroundColor = ConsoleColor.DarkGray;  Console.Write("█"); }
-        else if (cell == 2) { Console.ForegroundColor = ConsoleColor.Yellow;    Console.Write("@"); }
-        else if (cell == 3) { Console.ForegroundColor = ConsoleColor.Green;     Console.Write("★"); }
-        else                { Console.ForegroundColor = ConsoleColor.DarkBlue;  Console.Write("·"); }
+        if (cell == 1) { Console.ForegroundColor = ConsoleColor.DarkGray; Console.Write("█"); }
+        else if (cell == 2) { Console.ForegroundColor = ConsoleColor.Yellow; Console.Write("@"); }
+        else if (cell == 3) { Console.ForegroundColor = ConsoleColor.Green; Console.Write("★"); }
+        else { Console.ForegroundColor = ConsoleColor.DarkBlue; Console.Write("·"); }
     }
 }
 
@@ -119,10 +118,10 @@ void DessinerCellule(int cx, int cy)
 {
     Console.SetCursorPosition(offsetX + cx, offsetY + cy);
     int cell = grille[cx, cy];
-    if (cell == 1)      { Console.ForegroundColor = ConsoleColor.DarkGray;  Console.Write("█"); }
-    else if (cell == 2) { Console.ForegroundColor = ConsoleColor.Yellow;    Console.Write("@"); }
-    else if (cell == 3) { Console.ForegroundColor = ConsoleColor.Green;     Console.Write("★"); }
-    else                { Console.ForegroundColor = ConsoleColor.DarkBlue;  Console.Write("·"); }
+    if (cell == 1) { Console.ForegroundColor = ConsoleColor.DarkGray; Console.Write("█"); } // mur
+    else if (cell == 2) { Console.ForegroundColor = ConsoleColor.Yellow; Console.Write("@"); } // perso
+    else if (cell == 3) { Console.ForegroundColor = ConsoleColor.Green; Console.Write("★"); } // sortie
+    else { Console.ForegroundColor = ConsoleColor.DarkBlue; Console.Write(" "); } //cases vide
     Console.ResetColor();
 }
 
@@ -136,9 +135,9 @@ while (!gagné)
     int nx2 = joueurX;
     int ny2 = joueurY;
 
-    if      (touche == ConsoleKey.Z || touche == ConsoleKey.UpArrow)    ny2--;
-    else if (touche == ConsoleKey.S || touche == ConsoleKey.DownArrow)  ny2++;
-    else if (touche == ConsoleKey.Q || touche == ConsoleKey.LeftArrow)  nx2--;
+    if (touche == ConsoleKey.Z || touche == ConsoleKey.UpArrow) ny2--;
+    else if (touche == ConsoleKey.S || touche == ConsoleKey.DownArrow) ny2++;
+    else if (touche == ConsoleKey.Q || touche == ConsoleKey.LeftArrow) nx2--;
     else if (touche == ConsoleKey.D || touche == ConsoleKey.RightArrow) nx2++;
     else if (touche == ConsoleKey.Escape) break;
 
