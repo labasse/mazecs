@@ -2,35 +2,57 @@
 
 // ============================================================
 //  LABYRINTHE ASCII - C# Console
-//  Tableau : int[50, 20]  (width=50, height=20)
-//  0 = couloir   1 = mur   2 = player   3 = exit
-//  Déplacement : Z/Q/S/D ou flèches
 //  ✅ Optimisé : seules les cellules modifiées sont redessinées
 //               via Console.SetCursorPosition()
 // ============================================================
 
-const int width = 50;
-const int height = 20;
+// Constants
+const int WIDTH = 50;
+const int HEIGHT = 20;
+const int OFFSET_X = 0;
+const int OFFSET_Y = 3;
+const int CELL_WIDTH = WIDTH / 2;
+const int CELL_HEIGHT = HEIGHT / 2;
 
-var grid = new int[width, height];
+const ConsoleColor COLOR_WALL = ConsoleColor.DarkGray;
+const ConsoleColor COLOR_PLAYER = ConsoleColor.Yellow;
+const ConsoleColor COLOR_EXIT = ConsoleColor.Green;
+const ConsoleColor COLOR_CORRIDOR = ConsoleColor.DarkBlue;
+const ConsoleColor COLOR_TITLE = ConsoleColor.Cyan;
+const ConsoleColor COLOR_INSTRUCTIONS = ConsoleColor.DarkCyan;
+const ConsoleColor COLOR_WIN = ConsoleColor.Green;
+const ConsoleColor COLOR_QUIT = ConsoleColor.Red;
 
-// Décalage vertical dans la console (nombre de lignes du titre)
-const int offsetY = 3;
-const int offsetX = 0;
+const string MSG_TITLE = """
+    ╔══════════════════════════════════════════════════╗
+    ║          🏃 LABYRINTHE ASCII  C#  🏃             ║
+    ╚══════════════════════════════════════════════════╝
+    """;
+
+const string MSG_INSTRUCTIONS = "  [Z/↑] Haut   [S/↓] Bas   [Q/←] Gauche   [D/→] Droite   [Échap] Quitter";
+
+const string MSG_WIN = """
+      ╔════════════════════════════════╗
+      ║   🎉  FÉLICITATIONS !  🎉      ║
+      ║   Vous avez trouvé la sortie ! ║
+      ╚════════════════════════════════╝
+    """;
+
+const string MSG_QUIT = "\n  Partie abandonnée. À bientôt !";
+const string MSG_EXIT = "  Appuyez sur une key pour quitter...";
+
+var grid = new CellType[WIDTH, HEIGHT];
 
 // ── Génération du labyrinthe par « recursive backtracker » ──
-var cellW = width / 2;   // 25
-var cellH = height / 2;   // 10
+for (var y = 0; y < HEIGHT; y++)
+    for (var x = 0; x < WIDTH; x++)
+        grid[x, y] = CellType.Wall;
 
-for (var y = 0; y < height; y++)
-    for (var x = 0; x < width; x++)
-        grid[x, y] = 1;
-
-var stackX = new int[cellW * cellH];
-var stackY = new int[cellW * cellH];
+var stackX = new int[CELL_WIDTH * CELL_HEIGHT];
+var stackY = new int[CELL_WIDTH * CELL_HEIGHT];
 var stackTop = 0;
 
-var visited = new bool[cellW, cellH];
+var visited = new bool[CELL_WIDTH, CELL_HEIGHT];
 
 var dx = new[] { 0, 1, 0, -1 };
 var dy = new[] { -1, 0, 1, 0 };
@@ -39,7 +61,7 @@ var rng = new Random();
 
 var startCX = 0; var startCY = 0;
 visited[startCX, startCY] = true;
-grid[startCX * 2, startCY * 2] = 0;
+grid[startCX * 2, startCY * 2] = CellType.Corridor;
 
 stackX[stackTop] = startCX;
 stackY[stackTop] = startCY;
@@ -50,22 +72,18 @@ while (stackTop > 0)
     var cx = stackX[stackTop - 1];
     var cy = stackY[stackTop - 1];
 
-    var order = new[] { 0, 1, 2, 3 };
-    for (var i = 3; i > 0; i--)
-    {
-        var j = rng.Next(i + 1);
-        var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
-    }
+    var directions = new[] { 0, 1, 2, 3 };
+    rng.Shuffle(directions);
 
     var found = false;
-    for (var d = 0; d < 4; d++)
+    foreach (var dir in directions)
     {
-        var nx = cx + dx[order[d]];
-        var ny = cy + dy[order[d]];
-        if (nx >= 0 && nx < cellW && ny >= 0 && ny < cellH && !visited[nx, ny])
+        var nx = cx + dx[dir];
+        var ny = cy + dy[dir];
+        if (nx >= 0 && nx < CELL_WIDTH && ny >= 0 && ny < CELL_HEIGHT && !visited[nx, ny])
         {
-            grid[cx * 2 + dx[order[d]], cy * 2 + dy[order[d]]] = 0;
-            grid[nx * 2, ny * 2] = 0;
+            grid[cx * 2 + dx[dir], cy * 2 + dy[dir]] = CellType.Corridor;
+            grid[nx * 2, ny * 2] = CellType.Corridor;
             visited[nx, ny] = true;
             stackX[stackTop] = nx;
             stackY[stackTop] = ny;
@@ -79,50 +97,48 @@ while (stackTop > 0)
 
 // ── Position player et exit ──
 var playerX = 0; var playerY = 0;
-var exitX = (cellW - 1) * 2;
-var exitY = (cellH - 1) * 2;
+var exitX = (CELL_WIDTH - 1) * 2;
+var exitY = (CELL_HEIGHT - 1) * 2;
 
-grid[playerX, playerY] = 2;
-grid[exitX, exitY] = 3;
+grid[playerX, playerY] = CellType.Player;
+grid[exitX, exitY] = CellType.Exit;
 
 // ── Dessin initial complet (une seule fois) ──
 Console.Clear();
 Console.CursorVisible = false;
 
 Console.SetCursorPosition(0, 0);
-Console.ForegroundColor = ConsoleColor.Cyan;
-Console.WriteLine("╔══════════════════════════════════════════════════╗");
-Console.WriteLine("║          🏃 LABYRINTHE ASCII  C#  🏃             ║");
-Console.WriteLine("╚══════════════════════════════════════════════════╝");
+Console.ForegroundColor = COLOR_TITLE;
+Console.Write(MSG_TITLE);
 Console.ResetColor();
 
-for (var y = 0; y < height; y++)
+for (var y = 0; y < HEIGHT; y++)
 {
-    for (var x = 0; x < width; x++)
+    for (var x = 0; x < WIDTH; x++)
     {
-        Console.SetCursorPosition(offsetX + x, offsetY + y);
+        Console.SetCursorPosition(OFFSET_X + x, OFFSET_Y + y);
         var cell = grid[x, y];
-        if (cell == 1) { Console.ForegroundColor = ConsoleColor.DarkGray; Console.Write("█"); }
-        else if (cell == 2) { Console.ForegroundColor = ConsoleColor.Yellow; Console.Write("@"); }
-        else if (cell == 3) { Console.ForegroundColor = ConsoleColor.Green; Console.Write("★"); }
-        else { Console.ForegroundColor = ConsoleColor.DarkBlue; Console.Write(" "); }
+        if (cell == CellType.Wall) { Console.ForegroundColor = COLOR_WALL; Console.Write("█"); }
+        else if (cell == CellType.Player) { Console.ForegroundColor = COLOR_PLAYER; Console.Write("@"); }
+        else if (cell == CellType.Exit) { Console.ForegroundColor = COLOR_EXIT; Console.Write("★"); }
+        else { Console.ForegroundColor = COLOR_CORRIDOR; Console.Write(" "); }
     }
 }
 
-Console.SetCursorPosition(0, offsetY + height + 1);
-Console.ForegroundColor = ConsoleColor.DarkCyan;
-Console.Write("  [Z/↑] Haut   [S/↓] Bas   [Q/←] Gauche   [D/→] Droite   [Échap] Quitter");
+Console.SetCursorPosition(0, OFFSET_Y + HEIGHT + 1);
+Console.ForegroundColor = COLOR_INSTRUCTIONS;
+Console.Write(MSG_INSTRUCTIONS);
 Console.ResetColor();
 
 // ── Action locale : redessiner UNE seule cellule via SetCursorPosition ──
-void DrawCase(int cx, int cy)
+void DrawCell(int cx, int cy)
 {
-    Console.SetCursorPosition(offsetX + cx, offsetY + cy);
+    Console.SetCursorPosition(OFFSET_X + cx, OFFSET_Y + cy);
     var cell = grid[cx, cy];
-    if (cell == 1) { Console.ForegroundColor = ConsoleColor.DarkGray; Console.Write("█"); } // mur
-    else if (cell == 2) { Console.ForegroundColor = ConsoleColor.Yellow; Console.Write("@"); } // perso
-    else if (cell == 3) { Console.ForegroundColor = ConsoleColor.Green; Console.Write("★"); } // exit
-    else { Console.ForegroundColor = ConsoleColor.DarkBlue; Console.Write(" "); } //cases vide
+    if (cell == CellType.Wall) { Console.ForegroundColor = COLOR_WALL; Console.Write("█"); }
+    else if (cell == CellType.Player) { Console.ForegroundColor = COLOR_PLAYER; Console.Write("@"); }
+    else if (cell == CellType.Exit) { Console.ForegroundColor = COLOR_EXIT; Console.Write("★"); }
+    else { Console.ForegroundColor = COLOR_CORRIDOR; Console.Write(" "); }
     Console.ResetColor();
 }
 
@@ -142,41 +158,45 @@ while (!won)
     else if (key == ConsoleKey.D || key == ConsoleKey.RightArrow) nx2++;
     else if (key == ConsoleKey.Escape) break;
 
-    if (nx2 >= 0 && nx2 < width && ny2 >= 0 && ny2 < height && grid[nx2, ny2] != 1)
+    if (nx2 >= 0 && nx2 < WIDTH && ny2 >= 0 && ny2 < HEIGHT && grid[nx2, ny2] != CellType.Wall)
     {
-        if (grid[nx2, ny2] == 3) won = true;
+        if (grid[nx2, ny2] == CellType.Exit) won = true;
 
-        // ✅ Efface l'ancienne position (couloir) → 1 seule case redessinée
-        grid[playerX, playerY] = 0;
-        DrawCase(playerX, playerY);
+        grid[playerX, playerY] = CellType.Corridor;
+        DrawCell(playerX, playerY);
 
-        // ✅ Dessine la nouvelle position → 1 seule case redessinée
         playerX = nx2;
         playerY = ny2;
-        grid[playerX, playerY] = 2;
-        DrawCase(playerX, playerY);
+        grid[playerX, playerY] = CellType.Player;
+        DrawCell(playerX, playerY);
     }
 }
 
 // ── Écran de victoire ──
-Console.SetCursorPosition(0, offsetY + height + 3);
+Console.SetCursorPosition(0, OFFSET_Y + HEIGHT + 3);
 if (won)
 {
-    Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine("  ╔════════════════════════════════╗");
-    Console.WriteLine("  ║   🎉  FÉLICITATIONS !  🎉      ║");
-    Console.WriteLine("  ║   Vous avez trouvé la sortie ! ║");
-    Console.WriteLine("  ╚════════════════════════════════╝");
+    Console.ForegroundColor = COLOR_WIN;
+    Console.Write(MSG_WIN);
     Console.ResetColor();
 }
 else
 {
-    Console.ForegroundColor = ConsoleColor.Red;
-    Console.WriteLine("\n  Partie abandonnée. À bientôt !");
+    Console.ForegroundColor = COLOR_QUIT;
+    Console.Write(MSG_QUIT);
     Console.ResetColor();
 }
 
-Console.SetCursorPosition(0, offsetY + height + 8);
-Console.WriteLine("  Appuyez sur une key pour quitter...");
+Console.SetCursorPosition(0, OFFSET_Y + HEIGHT + 8);
+Console.WriteLine(MSG_EXIT);
 Console.CursorVisible = true;
 Console.ReadKey(true);
+
+// ── Enum CellType ──
+enum CellType
+{
+    Corridor = 0,
+    Wall = 1,
+    Player = 2,
+    Exit = 3
+}
