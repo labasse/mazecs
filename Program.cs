@@ -29,7 +29,7 @@ const string MSG_TITLE = """
     ╚══════════════════════════════════════════════════╝
     """;
 
-const string MSG_INSTRUCTIONS = "  [Z/↑] Haut   [S/↓] Bas   [Q/←] Gauche   [D/→] Droite   [Échap] Quitter";
+const string MSG_INSTRUCTIONS = "  [Z/^] Haut   [S/v] Bas   [Q/<] Gauche   [D/>] Droite   [Echap] Quitter";
 
 const string MSG_WIN = """
       ╔════════════════════════════════╗
@@ -113,17 +113,8 @@ Console.Write(MSG_TITLE);
 Console.ResetColor();
 
 for (var y = 0; y < HEIGHT; y++)
-{
     for (var x = 0; x < WIDTH; x++)
-    {
-        Console.SetCursorPosition(OFFSET_X + x, OFFSET_Y + y);
-        var cell = grid[x, y];
-        if (cell == CellType.Wall) { Console.ForegroundColor = COLOR_WALL; Console.Write("█"); }
-        else if (cell == CellType.Player) { Console.ForegroundColor = COLOR_PLAYER; Console.Write("@"); }
-        else if (cell == CellType.Exit) { Console.ForegroundColor = COLOR_EXIT; Console.Write("★"); }
-        else { Console.ForegroundColor = COLOR_CORRIDOR; Console.Write(" "); }
-    }
-}
+        DrawCell(x, y);
 
 Console.SetCursorPosition(0, OFFSET_Y + HEIGHT + 1);
 Console.ForegroundColor = COLOR_INSTRUCTIONS;
@@ -135,10 +126,16 @@ void DrawCell(int cx, int cy)
 {
     Console.SetCursorPosition(OFFSET_X + cx, OFFSET_Y + cy);
     var cell = grid[cx, cy];
-    if (cell == CellType.Wall) { Console.ForegroundColor = COLOR_WALL; Console.Write("█"); }
-    else if (cell == CellType.Player) { Console.ForegroundColor = COLOR_PLAYER; Console.Write("@"); }
-    else if (cell == CellType.Exit) { Console.ForegroundColor = COLOR_EXIT; Console.Write("★"); }
-    else { Console.ForegroundColor = COLOR_CORRIDOR; Console.Write(" "); }
+    var (color, pattern) = cell switch
+    {
+        CellType.Wall => (COLOR_WALL, "█"),
+        CellType.Player => (COLOR_PLAYER, "@"),
+        CellType.Exit => (COLOR_EXIT, "★"),
+        CellType.Corridor => (COLOR_CORRIDOR, " "),
+        _ => (COLOR_CORRIDOR, " ")
+    };
+    Console.ForegroundColor = color;
+    Console.Write(pattern);
     Console.ResetColor();
 }
 
@@ -152,11 +149,26 @@ while (!won)
     var nx2 = playerX;
     var ny2 = playerY;
 
-    if (key == ConsoleKey.Z || key == ConsoleKey.UpArrow) ny2--;
-    else if (key == ConsoleKey.S || key == ConsoleKey.DownArrow) ny2++;
-    else if (key == ConsoleKey.Q || key == ConsoleKey.LeftArrow) nx2--;
-    else if (key == ConsoleKey.D || key == ConsoleKey.RightArrow) nx2++;
-    else if (key == ConsoleKey.Escape) break;
+    switch (key)
+    {
+        case ConsoleKey.Z or ConsoleKey.UpArrow:
+            ny2--;
+            break;
+        case ConsoleKey.S or ConsoleKey.DownArrow:
+            ny2++;
+            break;
+        case ConsoleKey.Q or ConsoleKey.LeftArrow:
+            nx2--;
+            break;
+        case ConsoleKey.D or ConsoleKey.RightArrow:
+            nx2++;
+            break;
+        case ConsoleKey.Escape:
+            won = false;
+            break;
+    }
+
+    if (key == ConsoleKey.Escape) break;
 
     if (nx2 >= 0 && nx2 < WIDTH && ny2 >= 0 && ny2 < HEIGHT && grid[nx2, ny2] != CellType.Wall)
     {
